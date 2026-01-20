@@ -12,37 +12,30 @@ export default function Todo() {
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
 
-  // ✅ NEW: backend status
-  const [backendStatus, setBackendStatus] = useState("starting");
+  const [backendStarting, setBackendStarting] = useState(true);
+  const [backendAlertShown, setBackendAlertShown] = useState(false);
 
   const apiUrl = "https://todo-backend-gi24.onrender.com";
-
-  // ✅ NEW: check backend health
   const checkBackend = async () => {
     try {
       const res = await fetch(apiUrl + "/");
       const text = await res.text();
-      if (text === "Backend is awake!") {
-        setBackendStatus("awake");
+
+      if (text === "Backend is awake!" && !backendAlertShown) {
+        setBackendStarting(false);         
+        alert("✅ Backend is awake");
+        setBackendAlertShown(true);         
+        getItems();                        
       }
     } catch (err) {
-      setBackendStatus("starting");
+      setBackendStarting(true);
     }
   };
-
-  // ✅ NEW: poll backend until awake
   useEffect(() => {
     checkBackend();
     const interval = setInterval(checkBackend, 3000);
     return () => clearInterval(interval);
-  }, []);
-
-  // ✅ fetch todos ONLY after backend awake
-  useEffect(() => {
-    if (backendStatus === "awake") {
-      getItems();
-    }
-  }, [backendStatus]);
+  }, [backendAlertShown]);
 
   const handleSubmit = () => {
     setError("");
@@ -90,7 +83,10 @@ export default function Todo() {
     setError("");
     if (editTitle.trim() !== "" && editDescription.trim() !== "") {
       const oldTodo = todos.find(item => item._id === editId);
-      if (oldTodo.title === editTitle && oldTodo.description === editDescription) {
+      if (
+        oldTodo.title === editTitle &&
+        oldTodo.description === editDescription
+      ) {
         setError("No changes made");
         setTimeout(() => setError(""), 3000);
         return;
@@ -99,7 +95,10 @@ export default function Todo() {
       fetch(apiUrl + "/todos/" + editId, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: editTitle, description: editDescription }),
+        body: JSON.stringify({
+          title: editTitle,
+          description: editDescription
+        }),
       })
         .then((res) => {
           if (!res.ok) throw new Error();
@@ -137,17 +136,9 @@ export default function Todo() {
           <div className="row p-3 bg-success text-light">
             <h1 className="text-center">Task Overview Dashboard</h1>
           </div>
-
-          {/* ✅ Backend status message */}
-          {backendStatus === "starting" && (
+          {backendStarting && (
             <p className="text-warning text-center mt-2">
               ⏳ Backend is starting... please wait
-            </p>
-          )}
-
-          {backendStatus === "awake" && (
-            <p className="text-success text-center mt-2">
-              ✅ Backend is awake
             </p>
           )}
 
@@ -157,22 +148,18 @@ export default function Todo() {
 
             <div className="form-group d-flex gap-2">
               <input
-                placeholder="Enter Title here"
                 className="form-control"
+                placeholder="Enter Title here"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
               <input
-                placeholder="Enter Description here"
                 className="form-control"
+                placeholder="Enter Description here"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
-              <button
-                className="btn btn-dark"
-                onClick={handleSubmit}
-                disabled={backendStatus !== "awake"}
-              >
+              <button className="btn btn-dark" onClick={handleSubmit}>
                 Submit
               </button>
             </div>
@@ -185,7 +172,10 @@ export default function Todo() {
             <div className="col-md-6">
               <ul className="list-group">
                 {todos.map((item) => (
-                  <li key={item._id} className="list-group-item bg-info d-flex justify-content-between my-2">
+                  <li
+                    key={item._id}
+                    className="list-group-item bg-info d-flex justify-content-between my-2"
+                  >
                     <div>
                       {editId !== item._id ? (
                         <>
@@ -194,22 +184,44 @@ export default function Todo() {
                         </>
                       ) : (
                         <div className="d-flex gap-2">
-                          <input className="form-control" value={editTitle} onChange={e => setEditTitle(e.target.value)} />
-                          <input className="form-control" value={editDescription} onChange={e => setEditDescription(e.target.value)} />
+                          <input
+                            className="form-control"
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                          />
+                          <input
+                            className="form-control"
+                            value={editDescription}
+                            onChange={(e) => setEditDescription(e.target.value)}
+                          />
                         </div>
                       )}
                     </div>
 
                     <div className="d-flex gap-2">
                       {editId !== item._id ? (
-                        <button className="btn btn-warning" onClick={() => handleEdit(item)}>Edit</button>
+                        <button
+                          className="btn btn-warning"
+                          onClick={() => handleEdit(item)}
+                        >
+                          Edit
+                        </button>
                       ) : (
-                        <button className="btn btn-warning" onClick={handleUpdate}>Update</button>
+                        <button
+                          className="btn btn-warning"
+                          onClick={handleUpdate}
+                        >
+                          Update
+                        </button>
                       )}
+
                       {editId !== item._id ? (
-                        <button className="btn btn-danger" onClick={() => handleDelete(item._id)}>Delete</button>
+                        <button className="btn btn-danger" onClick={() => handleDelete(item._id)}>
+                          Delete
+                        </button>
                       ) : (
-                        <button className="btn btn-danger" onClick={handleEditCancel}>Cancel</button>
+                        <button
+                          className="btn btn-danger" onClick={handleEditCancel}>Cancel</button>
                       )}
                     </div>
                   </li>
