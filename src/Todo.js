@@ -10,6 +10,7 @@ export default function Todo(){
     const [editId,setEditId]=useState(-1);
     const [editTitle,setEditTitle]=useState("");
     const [editDescription,setEditDescription]=useState("");
+    const [serverLoading, setServerLoading] = useState(true);
 
     const apiUrl="https://todo-backend-gi24.onrender.com";
 
@@ -55,11 +56,18 @@ useEffect(()=>{
     getItems()
 },[])  
 const getItems =()=>{
+     setServerLoading(true);
     fetch(apiUrl+"/todos")
     .then((res)=>res.json())
     .then((res)=>{
-        setTodos(res)
+        setTodos(res);
+         setServerLoading(false);
     })
+     .catch(() => {
+        setServerLoading(false);
+        setError("Unable to connect to the server");
+        setTimeout(() => setError(""), 4000);
+      });
 }
 const handleEdit=(item)=>{
     setEditId(item._id);
@@ -137,6 +145,11 @@ if(window.confirm("Are you sure to delete this item?")){
     </div>
     <div className="row">
        <h3>Add Items</h3>
+       {serverLoading && (
+              <p className="text-warning">
+                Please wait, server is starting...
+              </p>
+            )}
        {message&&<p className="text-success">{message}</p>}
         <div className="form-group d-flex gap-2">
         <input placeholder="Enter Title here" className="form-control" onChange={(e)=>setTitle(e.target.value)} value={title} type="text" />
